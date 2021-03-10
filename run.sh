@@ -1,3 +1,3 @@
 #!/bin/sh
 
-flask run
+python3 -m flask run
