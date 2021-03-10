@@ -2,11 +2,16 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 from flask_restful import Resource, Api, abort
+import os
 
 app = Flask(__name__)
 api = Api(app)
 
 scheduler = BackgroundScheduler()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# CUR_DIR = os.path.dirname(os.path.abspath(__file__))
+# BASE_DIR = os.path.dirname(CUR_DIR)
 
 # TODO:
 # 1. update words base once a day, scheduled
@@ -24,9 +29,8 @@ class TextFiltering:
         url = "https://raw.githubusercontent.com/RobertJGabriel/Google-profanity-words/master/list.txt"
         r = requests.get(url, allow_redirects=True)
         r = r.text
-        # for lang in lang_codes:
-        #     open(f'data/words_{lang}.txt', 'w').write(r)
-        open(f'words_en-US.txt', 'w').write(r)
+        for lang in lang_codes:
+            open(f'{BASE_DIR}/data/words_{lang}.txt', 'w').write(r)
 
     def filter_text(self, text, lang):
         special_symbols = ('!', '?', '.', ',', ':', ';', '-', '_',)
@@ -94,9 +98,6 @@ if scheduler.state == 0:
     scheduler.start()
 
 if __name__ == '__main__':
-
-    tf = TextFiltering()
-    tf.get_from_url()
     app.run()
 
 
