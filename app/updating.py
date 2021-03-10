@@ -4,6 +4,7 @@ import requests
 
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(CUR_DIR)
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 dict_of_data_sets = dict()
 SOURCES_BY_LANG = {
@@ -18,6 +19,14 @@ def get_data_from_set(lang_code):
     return dict_of_data_sets[lang_code]
 
 
+def save_data_set(lang_code, words):
+    if not os.path.exists(DATA_DIR):
+        os.mkdir(DATA_DIR)
+
+    with open(os.path.join(DATA_DIR, f'words_{lang_code}.txt'), 'w') as f:
+        f.write(words)
+
+
 def update_data(lang_code, ):
     url = SOURCES_BY_LANG.get(lang_code)
 
@@ -26,13 +35,12 @@ def update_data(lang_code, ):
         response = requests.get(url, allow_redirects=True)
         if response.status_code == 200:
             words = response.text
-            with open(f'{BASE_DIR}/data/words_{lang_code}.txt', 'w') as f:
-                f.write(words)
+            save_data_set(lang_code, words)
     except requests.RequestException:
         pass
 
     if words is None:
-        with open(f'{BASE_DIR}/data/words_{lang_code}.txt', 'r') as f:
+        with open(os.path.join(DATA_DIR, f'words_{lang_code}.txt'), 'r') as f:
             words = f.read()
 
     make_set(lang_code, words)
