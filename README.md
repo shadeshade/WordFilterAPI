@@ -1,4 +1,4 @@
-##API instructions
+## API instructions
 
 Run the following commands to get started:
 ```
@@ -6,14 +6,14 @@ sh ./install.sh
 sh ./run.sh
 ```
 
-##POST /api/filter-bad-words/en-US
+## POST /api/filter-bad-words/en-US
 
-+ ###Request
++ ### Request
 ```
 /api/filter-bad-words/en-US
 ```
 
-+ ###Body
++ ### Body
 Your key should be equal "message". 
 Write your text in the value to filter.
 ```
@@ -21,8 +21,7 @@ Write your text in the value to filter.
       "message": "What the HELL?!!"
   }
 ```
-
-+ ###Response 200
++ ### Response200
 ```
   {
       "filtered text": "What the ***?!!"
