@@ -3,15 +3,19 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 from flask_restful import Resource, Api, abort
 import os
+import pytz
+
+TIME_ZONE_MSK = pytz.timezone('Europe/Moscow')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# CUR_DIR = os.path.dirname(os.path.abspath(__file__))
+# BASE_DIR = os.path.dirname(CUR_DIR)
 
 app = Flask(__name__)
 api = Api(app)
 
 scheduler = BackgroundScheduler()
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# CUR_DIR = os.path.dirname(os.path.abspath(__file__))
-# BASE_DIR = os.path.dirname(CUR_DIR)
+scheduler.configure(timezone=TIME_ZONE_MSK)
 
 # TODO:
 # 1. update words base once a day, scheduled
@@ -20,23 +24,24 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # 4. break app.py to multiple files based on style principles
 
 
-lang_codes = ['en-US']
+lang_codes = {
+    'en-US': "https://raw.githubusercontent.com/RobertJGabriel/Google-profanity-words/master/list.txt",
+}
 
 
 class TextFiltering:
-
-    def get_from_url(self, ):
-        url = "https://raw.githubusercontent.com/RobertJGabriel/Google-profanity-words/master/list.txt"
-        r = requests.get(url, allow_redirects=True)
-        r = r.text
+    @staticmethod
+    def update_all_data():
         for lang in lang_codes:
+            url = lang_codes.get(lang)
+            r = requests.get(url, allow_redirects=True)
+            r = r.text
             open(f'{BASE_DIR}/data/words_{lang}.txt', 'w').write(r)
 
     def filter_text(self, text, lang):
         special_symbols = ('!', '?', '.', ',', ':', ';', '-', '_',)
         gram_endings = ('ing', 'ed', 'es', 's',)
-
-        bad_words = set(bw.strip("\n") for bw in open(f'data/words_{lang}.txt'))
+        bad_words = set(bw.strip("\n") for bw in open(f'{BASE_DIR}/data/words_{lang}.txt'))
 
         text = text.split()
         filtered_text = []
@@ -73,7 +78,7 @@ class RequestHandler(Resource):
 
     def post(self, lang_code):
         if lang_code not in lang_codes:
-            abort(404, message='BAD NEWS')
+            abort(404, message='No such a language code')
 
         some_json = request.get_json()
         some_text = TextFiltering()
@@ -85,12 +90,9 @@ class RequestHandler(Resource):
             abort(415, message='Unsupported Media Type')
 
 
-# api.add_resource(RequestHandler, f'/api/filter-bad-words/{lang}',)
-
-
 def set_daily_update():
-    tf = TextFiltering()
-    scheduler.add_job(tf.get_from_url, 'interval', hours=24)
+    """update data base every 24h in case new words are added"""
+    scheduler.add_job(TextFiltering().update_all_data, trigger='cron', hour=4, minute=0)
 
 
 if scheduler.state == 0:
@@ -98,7 +100,9 @@ if scheduler.state == 0:
     scheduler.start()
 
 if __name__ == '__main__':
+    path, dirs, files = next(os.walk(f"{BASE_DIR}/data"))
+    if len(lang_codes) != len(files):  # updating our data in case some files are lost or not downloaded
+        TextFiltering().update_all_data()
+
     app.run()
-
-
     # app.run(host="localhost", port=4201, debug=True)
