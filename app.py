@@ -1,11 +1,11 @@
+import os
+
 import requests
-from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 from flask_restful import Resource, Api, abort
-import os
-import pytz
 
-TIME_ZONE_MSK = pytz.timezone('Europe/Moscow')
+from scheduling import set_daily_update, scheduler
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # CUR_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,9 +13,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 api = Api(app)
-
-scheduler = BackgroundScheduler()
-scheduler.configure(timezone=TIME_ZONE_MSK)
 
 # TODO:
 # 1. update words base once a day, scheduled
@@ -39,7 +36,7 @@ class TextFiltering:
             open(f'{BASE_DIR}/data/words_{lang}.txt', 'w').write(r)
 
     def filter_text(self, text, lang):
-        special_symbols = ('!', '?', '.', ',', ':', ';', '-', '_',)
+        special_symbols = ('!', '?', '.', ',', ':', ';', '-', '_', '%',)
         gram_endings = ('ing', 'ed', 'es', 's',)
         bad_words = set(bw.strip("\n") for bw in open(f'{BASE_DIR}/data/words_{lang}.txt'))
 
@@ -54,7 +51,7 @@ class TextFiltering:
                 for ending in gram_endings:
                     if word.endswith(ending):
                         ending_len = len(ending)
-                        temp_val += word[-ending_len]
+                        temp_val += word[-ending_len:][::-1]
                         word = word[:-ending_len]
                         break
             if word in bad_words:
@@ -81,28 +78,21 @@ class RequestHandler(Resource):
             abort(404, message='No such a language code')
 
         some_json = request.get_json()
-        some_text = TextFiltering()
+        to_filter = TextFiltering()
         try:
-            return some_text.filter_text(some_json['message'], lang_code)
+            return to_filter.filter_text(some_json['message'], lang_code)
         except KeyError:
             abort(404, message='KeyError')
         except TypeError:
             abort(415, message='Unsupported Media Type')
 
 
-def set_daily_update():
-    """update data base every 24h in case new words are added"""
-    scheduler.add_job(TextFiltering().update_all_data, trigger='cron', hour=4, minute=0)
-
-
-if scheduler.state == 0:
-    set_daily_update()
-    scheduler.start()
-
 if __name__ == '__main__':
     path, dirs, files = next(os.walk(f"{BASE_DIR}/data"))
     if len(lang_codes) != len(files):  # updating our data in case some files are lost or not downloaded
         TextFiltering().update_all_data()
-
+    if scheduler.state == 0:
+        set_daily_update()
+        scheduler.start()
     app.run()
     # app.run(host="localhost", port=4201, debug=True)
