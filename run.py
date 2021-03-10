@@ -10,6 +10,7 @@ from app.scheduling import set_daily_update, scheduler
 # TODO:
 # 3. if passed lang is not supported, return an error
 # 4. break run.py to multiple files based on style principles
+from app.updating import DataUpdating
 
 
 def register_resource(*urls, **kwargs):
@@ -24,9 +25,6 @@ def register_resource(*urls, **kwargs):
 class RequestHandler(Resource):
 
     def post(self, lang_code):
-        if lang_code not in lang_codes:
-            abort(404, message='No such a language code')
-
         to_filter = TextFiltering()
         try:
             # fixme: they could send data in different format, catch exception if not json
@@ -41,6 +39,7 @@ class RequestHandler(Resource):
 
 if __name__ == '__main__':
     # todo: initialize set with bad words at the start
+    DataUpdating.initialize_all_data()
     set_daily_update()
     scheduler.start()
 

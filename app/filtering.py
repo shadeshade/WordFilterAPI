@@ -16,7 +16,7 @@ class TextFiltering:
             # fixme: preprocess banned words when you download not when you actually filter text
             bad_words = set(bw.strip("\n") for bw in open(f'{BASE_DIR}/data/words_{lang_code}.txt'))
         except:
-            DataUpdating.get_data(lang_code)
+            DataUpdating.update_data(lang_code)
             bad_words = set(bw.strip("\n") for bw in open(f'{BASE_DIR}/data/words_{lang_code}.txt'))
 
         words = text.split()
