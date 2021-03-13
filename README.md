@@ -36,8 +36,8 @@ In `filtering.py` create new class based on `BaseTextFiltering`.
 ```
 class AnyLangTextFiltering(BaseTextFiltering):
     lang_code = "your language code"
-    gram_endings = "grammatical endings of your language"
-
+    special_symbols = ("list of special symbols to exclude from the endings of words")
+    gram_endings = ("grammatical endings of your language")
 ```
 
 Add your key and value to the function below.
